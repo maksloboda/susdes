@@ -4,7 +4,22 @@ import sys
 import configparser
 
 APP_NAME = "SusDesign"
+CONF_NAME = "data.conf"
 config_keys = ["jenkins_address", "jenkins_login", "jenkins_password", "student_name", "repository_url"]
+
+
+def load_data_from_config() -> dict:
+    path = os.path.join(click.get_app_dir(APP_NAME), CONF_NAME)
+    config = configparser.ConfigParser()
+    try:
+        config.read(path)
+        values = {}
+        for key in config_keys:
+            values[key] = config["data"][key]
+        return values
+    except Exception as e:
+        click.echo(f"read error: {e}", sys.stderr)
+        return {}
 
 
 # Tries to write data to the config
@@ -19,7 +34,7 @@ def write_data_to_config(data) -> bool:
     except PermissionError:
         click.echo("failed to create folders", sys.stderr)
         return False
-    path = os.path.join(app_dir, "data.conf")
+    path = os.path.join(app_dir, CONF_NAME)
     config = configparser.ConfigParser()
     try:
         for key in config_keys:
@@ -64,7 +79,22 @@ def setup(jenkins_address, jenkins_login, jenkins_password, student_name, reposi
     click.echo("Saved")
 
 
+@click.command()
+@click.option("--setting")
+@click.option("--value", prompt=True, hide_input=lambda x: x == "jenkins_password")
+def update(setting, value):
+    data = load_data_from_config()
+    if not data:
+        click.echo("failed to load the config, try setup first", sys.stderr)
+    if setting not in config_keys:
+        click.echo("no such property", sys.stderr)
+        sys.exit(1)
+    data[setting] = value
+    write_data_to_config(data)
+
+
 cli.add_command(setup)
+cli.add_command(update)
 
 if __name__ == "__main__":
     cli()
