@@ -1,3 +1,5 @@
+import subprocess
+
 import click
 import os
 import sys
@@ -170,9 +172,27 @@ def homework_stat(homework):
         )
     )
 
+@click.command("submit")
+@click.argument("homework")
+def homework_submit(homework):
+    data = try_load_config()
+    con = get_jenkins_connection(data)
+    if all(map(lambda x: x["fullname"] != homework, con.get_jobs())):
+        click.echo("no such homework", sys.stderr)
+        sys.exit(1)
+    completed = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True)
+    current_commit = completed.stdout.strip().decode("utf-8")
+    number = con.build_job(homework, {
+        "STUDENT_NAME": data["student_name"],
+        "GITHUB_CLONE_URL": data["repository_url"],
+        "GIT_COMMIT_HASH": current_commit,
+    })
+    click.echo(number)
+
 
 homework.add_command(homework_list)
 homework.add_command(homework_stat)
+homework.add_command(homework_submit)
 
 cli.add_command(setup)
 cli.add_command(homework)
