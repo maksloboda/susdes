@@ -187,7 +187,8 @@ def homework_submit(homework):
         "GITHUB_CLONE_URL": data["repository_url"],
         "GIT_COMMIT_HASH": current_commit,
     })
-    click.echo(number)
+    # This is not the display name sadly ;(
+    # click.echo(number)
 
 
 homework.add_command(homework_list)
