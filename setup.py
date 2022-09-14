@@ -2,8 +2,8 @@ from setuptools import setup
 
 setup(
     name='susdes',
-    version='0.1.1',
-    py_modules=['main'],
+    version='0.1.2',
+    py_modules=['susdes'],
     url="https://github.com/maksloboda/susdes",
     author="Maks Loboda",
     author_email="mloboda@edu.hse.ru",
