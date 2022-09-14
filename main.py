@@ -3,10 +3,19 @@ import os
 import sys
 import configparser
 
+import jenkins
+
 APP_NAME = "SusDesign"
 CONF_NAME = "data.conf"
 config_keys = ["jenkins_address", "jenkins_login", "jenkins_password", "student_name", "repository_url"]
 
+
+def try_load_config() -> dict:
+    config = load_data_from_config()
+    if not config:
+        click.echo("failed to load the config, try setup first", sys.stderr)
+        sys.exit(1)
+    return config
 
 def load_data_from_config() -> dict:
     path = os.path.join(click.get_app_dir(APP_NAME), CONF_NAME)
@@ -83,17 +92,90 @@ def setup(jenkins_address, jenkins_login, jenkins_password, student_name, reposi
 @click.option("--setting")
 @click.option("--value", prompt=True, hide_input=lambda x: x == "jenkins_password")
 def update(setting, value):
-    data = load_data_from_config()
-    if not data:
-        click.echo("failed to load the config, try setup first", sys.stderr)
+    data = try_load_config()
     if setting not in config_keys:
         click.echo("no such property", sys.stderr)
         sys.exit(1)
     data[setting] = value
     write_data_to_config(data)
 
+@click.group()
+def homework():
+    pass
+
+def get_jenkins_connection(data):
+    con = jenkins.Jenkins(data["jenkins_address"], username=data["jenkins_login"], password=data["jenkins_password"])
+    return con
+
+@click.command("list")
+def homework_list():
+    data = try_load_config()
+    con = get_jenkins_connection(data)
+    jobs = [f"{idx + 1}. {job_data['fullname']}" for idx, job_data in enumerate(con.get_jobs())]
+    click.echo("\n".join(jobs))
+
+
+def is_build_by_current_student(data, build_info) -> bool:
+    def find_value_where_key(where, key, desired):
+        for idx, value in enumerate(where):
+            if key in value and value[key] == desired:
+                return value
+        return None
+    action_data = find_value_where_key(build_info["actions"], "_class", "hudson.model.ParametersAction")
+    if not action_data:
+        return False
+    action_parameters = action_data.get("parameters")
+    if not action_parameters:
+        return False
+    student_info = find_value_where_key(action_parameters, "name", "STUDENT_NAME")
+    return student_info and student_info["value"] == data["student_name"]
+
+
+def format_build(build_info):
+    string = f"{build_info['displayName']}: {build_info['result']} { 'KEEP' if build_info['keepLog'] else 'DONT KEEP'}\n"
+    if build_info['result'] == 'SUCCESS':
+        if build_info['keepLog']:
+            return click.style(string, fg="green")
+        else:
+            return click.style(string, fg="yellow")
+    elif build_info['result'] == 'FAILURE':
+        return click.style(string, fg="red")
+    else:
+        return click.style(string, fg="white")
+
+
+
+
+@click.command("stat")
+@click.argument("homework")
+def homework_stat(homework):
+    data = try_load_config()
+    con = get_jenkins_connection(data)
+    if all(map(lambda x: x["fullname"] != homework, con.get_jobs())):
+        click.echo("no such homework", sys.stderr)
+        sys.exit(1)
+    builds = con.get_job_info(homework)["builds"]
+    info = filter(
+        lambda x: is_build_by_current_student(data, x),
+        map(
+            lambda x: con.get_build_info(homework, x['number']),
+            builds
+        )
+    )
+
+    click.echo_via_pager(
+        map(
+            format_build,
+            info
+        )
+    )
+
+
+homework.add_command(homework_list)
+homework.add_command(homework_stat)
 
 cli.add_command(setup)
+cli.add_command(homework)
 cli.add_command(update)
 
 if __name__ == "__main__":
