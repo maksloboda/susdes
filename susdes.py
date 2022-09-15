@@ -70,6 +70,9 @@ def write_data_to_config(data) -> bool:
 
 @click.group()
 def cli():
+    """
+    Utility used for system design course at HSE
+    """
     pass
 
 
@@ -81,6 +84,9 @@ def cli():
 @click.option("--student_name", prompt=True)
 @click.option("--repository_url", prompt=True)
 def setup(jenkins_address, jenkins_login, jenkins_password, student_name, repository_url):
+    """
+    Writes all required data to a config
+    """
     data = {
         i: j for i, j in
         zip(config_keys, [jenkins_address, jenkins_login, jenkins_password, student_name, repository_url])
@@ -95,6 +101,9 @@ def setup(jenkins_address, jenkins_login, jenkins_password, student_name, reposi
 @click.option("--setting", required=True)
 @click.option("--value", prompt=True, hide_input=lambda x: x == "jenkins_password")
 def update(setting, value):
+    """
+    Updates a configuration value.
+    """
     data = try_load_config()
     if setting not in config_keys:
         click.echo("no such property", sys.stderr)
@@ -105,6 +114,9 @@ def update(setting, value):
 
 @click.group("homework")
 def homework_group():
+    """
+    Homework related actions
+    """
     pass
 
 
@@ -115,6 +127,9 @@ def get_jenkins_connection(data):
 
 @click.command("list")
 def homework_list():
+    """
+    Shows all available homeworks
+    """
     data = try_load_config()
     con = get_jenkins_connection(data)
     jobs = [f"{idx + 1}. {job_data['fullname']}" for idx, job_data in enumerate(con.get_jobs())]
@@ -154,6 +169,9 @@ def format_build(build_info):
 @click.command("stat")
 @click.argument("homework")
 def homework_stat(homework):
+    """
+    Shows all submissions made by this student
+    """
     data = try_load_config()
     con = get_jenkins_connection(data)
     if all(map(lambda x: x["fullname"] != homework, con.get_jobs())):
@@ -179,6 +197,9 @@ def homework_stat(homework):
 @click.command("submit")
 @click.argument("homework")
 def homework_submit(homework):
+    """
+    Submits current commit to the build system
+    """
     data = try_load_config()
     con = get_jenkins_connection(data)
     if all(map(lambda x: x["fullname"] != homework, con.get_jobs())):
