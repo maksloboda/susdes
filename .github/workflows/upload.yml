@@ -20,7 +20,7 @@ jobs:
       - name: Set version
         run: sed -i 's/VERSIONGOESHERE/${{ github.event.inputs.version }}/g' setup.py
       - name: Build
-        run: python setup.py build
+        run: python setup.py build sdist
       - name: upload
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
