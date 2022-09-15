@@ -92,7 +92,7 @@ def setup(jenkins_address, jenkins_login, jenkins_password, student_name, reposi
 
 
 @click.command()
-@click.option("--setting")
+@click.option("--setting", required=True)
 @click.option("--value", prompt=True, hide_input=lambda x: x == "jenkins_password")
 def update(setting, value):
     data = try_load_config()
