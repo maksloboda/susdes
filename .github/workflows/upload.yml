@@ -1,0 +1,28 @@
+name: upload
+
+# Controls when the workflow will run
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'displayed version of the package'
+        required: true
+
+jobs:
+  upload:
+    name: Upload
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          lfs: true
+      - name: Set version
+        run: sed -i 's/VERSIONGOESHERE/${{ github.event.inputs.version }}/g' setup.py
+      - name: Build
+        run: python setup.py build
+      - name: upload
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          verify_metadata: true

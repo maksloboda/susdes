@@ -1,8 +1,10 @@
 from setuptools import setup
 
+version = "VERSIONGOESHERE"
+
 setup(
     name='susdes',
-    version='0.1.2',
+    version=version,
     py_modules=['susdes'],
     url="https://github.com/maksloboda/susdes",
     author="Maks Loboda",
