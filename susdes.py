@@ -19,6 +19,7 @@ def try_load_config() -> dict:
         sys.exit(1)
     return config
 
+
 def load_data_from_config() -> dict:
     path = os.path.join(click.get_app_dir(APP_NAME), CONF_NAME)
     config = configparser.ConfigParser()
@@ -101,13 +102,16 @@ def update(setting, value):
     data[setting] = value
     write_data_to_config(data)
 
-@click.group()
-def homework():
+
+@click.group("homework")
+def homework_group():
     pass
+
 
 def get_jenkins_connection(data):
     con = jenkins.Jenkins(data["jenkins_address"], username=data["jenkins_login"], password=data["jenkins_password"])
     return con
+
 
 @click.command("list")
 def homework_list():
@@ -134,7 +138,8 @@ def is_build_by_current_student(data, build_info) -> bool:
 
 
 def format_build(build_info):
-    string = f"{build_info['displayName']}: {build_info['result']} { 'KEEP' if build_info['keepLog'] else 'DONT KEEP'}\n"
+    string = \
+        f"{build_info['displayName']}: {build_info['result']} { 'KEEP' if build_info['keepLog'] else 'DONT KEEP'}\n"
     if build_info['result'] == 'SUCCESS':
         if build_info['keepLog']:
             return click.style(string, fg="green")
@@ -144,8 +149,6 @@ def format_build(build_info):
         return click.style(string, fg="red")
     else:
         return click.style(string, fg="white")
-
-
 
 
 @click.command("stat")
@@ -172,6 +175,7 @@ def homework_stat(homework):
         )
     )
 
+
 @click.command("submit")
 @click.argument("homework")
 def homework_submit(homework):
@@ -182,21 +186,21 @@ def homework_submit(homework):
         sys.exit(1)
     completed = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True)
     current_commit = completed.stdout.strip().decode("utf-8")
-    number = con.build_job(homework, {
+    # This is not the display name sadly ;(
+    con.build_job(homework, {
         "STUDENT_NAME": data["student_name"],
         "GITHUB_CLONE_URL": data["repository_url"],
         "GIT_COMMIT_HASH": current_commit,
     })
-    # This is not the display name sadly ;(
     # click.echo(number)
 
 
-homework.add_command(homework_list)
-homework.add_command(homework_stat)
-homework.add_command(homework_submit)
+homework_group.add_command(homework_list)
+homework_group.add_command(homework_stat)
+homework_group.add_command(homework_submit)
 
 cli.add_command(setup)
-cli.add_command(homework)
+cli.add_command(homework_group)
 cli.add_command(update)
 
 if __name__ == "__main__":
