@@ -1,12 +1,9 @@
 name: upload
 
-# Controls when the workflow will run
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'displayed version of the package'
-        required: true
+  push:
+    tags:
+      - v**
 
 jobs:
   upload:
@@ -17,8 +14,12 @@ jobs:
         uses: actions/checkout@v2
         with:
           lfs: true
+      - uses: olegtarasov/get-tag@v2.1
+        id: tagName
+        with:
+          tagRegex: "v(.*)"
       - name: Set version
-        run: sed -i 's/VERSIONGOESHERE/${{ github.event.inputs.version }}/g' setup.py
+        run: sed -i 's/VERSIONGOESHERE/${{ steps.tagName.outputs.tag }}/g' setup.py
       - name: Build
         run: python setup.py build sdist
       - name: upload
