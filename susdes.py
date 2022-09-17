@@ -168,9 +168,10 @@ def format_build(build_info):
 
 @click.command("stat")
 @click.argument("homework")
-def homework_stat(homework):
+@click.option("--all", "visibility", flag_value="all", help="Shows all submissions")
+def homework_stat(homework, visibility):
     """
-    Shows all submissions made by this student
+    Shows submissions for this homework. By default, only for current student.
     """
     data = try_load_config()
     con = get_jenkins_connection(data)
@@ -179,7 +180,7 @@ def homework_stat(homework):
         sys.exit(1)
     builds = con.get_job_info(homework)["builds"]
     info = filter(
-        lambda x: is_build_by_current_student(data, x),
+        lambda x: visibility == "all" or is_build_by_current_student(data, x),
         map(
             lambda x: con.get_build_info(homework, x['number']),
             builds
