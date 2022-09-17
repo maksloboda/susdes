@@ -153,17 +153,19 @@ def is_build_by_current_student(data, build_info) -> bool:
 
 
 def format_build(build_info):
-    string = \
-        f"{build_info['displayName']}: {build_info['result']} { 'KEEP' if build_info['keepLog'] else 'DONT KEEP'}\n"
+    name_and_result = f"{build_info['displayName']}: {build_info['result']}"
     if build_info['result'] == 'SUCCESS':
+        result = f"{name_and_result} { 'KEEP' if build_info['keepLog'] else 'DONT KEEP'}\n"
         if build_info['keepLog']:
-            return click.style(string, fg="green")
+            return click.style(result, fg="green")
         else:
-            return click.style(string, fg="yellow")
-    elif build_info['result'] == 'FAILURE':
-        return click.style(string, fg="red")
+            return click.style(result, fg="yellow")
     else:
-        return click.style(string, fg="white")
+        result = f"{name_and_result}\n"
+        if build_info['result'] == 'FAILURE':
+            return click.style(result, fg="red")
+        else:
+            return click.style(result, fg="white")
 
 
 @click.command("stat")
