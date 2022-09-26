@@ -1,9 +1,12 @@
 import subprocess
+import typing
 
 import click
 import os
 import sys
 import configparser
+
+from test_system_wrapper import TestSystemWrapper
 
 import jenkins
 
@@ -11,6 +14,7 @@ APP_NAME = "SusDesign"
 CONF_NAME = "data.conf"
 config_keys = ["jenkins_address", "jenkins_login", "jenkins_password", "student_name", "repository_url"]
 
+TSW: typing.Optional[TestSystemWrapper] = None
 
 def try_load_config() -> dict:
     config = load_data_from_config()
@@ -117,7 +121,14 @@ def homework_group():
     """
     Homework related actions
     """
-    pass
+    # Set up the test system wrapper
+    global TSW
+    data = load_data_from_config()
+    try:
+        TSW = TestSystemWrapper(data["jenkins_address"], data["jenkins_login"], data["jenkins_password"])
+    except jenkins.JenkinsException as e:
+        print(e, file=sys.stderr)
+        sys.exit(1)
 
 
 def get_jenkins_connection(data):
@@ -130,9 +141,7 @@ def homework_list():
     """
     Shows all available homeworks
     """
-    data = try_load_config()
-    con = get_jenkins_connection(data)
-    jobs = [f"{idx + 1}. {job_data['fullname']}" for idx, job_data in enumerate(con.get_jobs())]
+    jobs = [f"{idx + 1}. {job_data.fullname}" for idx, job_data in enumerate(TSW.get_homework_list())]
     click.echo("\n".join(jobs))
 
 
