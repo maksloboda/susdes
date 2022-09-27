@@ -67,13 +67,19 @@ class TestSystemWrapper:
 
     def get_build_info(self, homework_name: str, build_metadata: dict):
         number = build_metadata['number']
-        if number in self.build_data_cache:
-            return self.build_data_cache[number]
+        homework_cache = dict()
+        if homework_name in self.build_data_cache:
+            homework_cache = self.build_data_cache[homework_name]
+        else:
+            self.build_data_cache[homework_name] = homework_cache
+
+        if number in homework_cache:
+            return homework_cache[number]
         else:
             build_data_dict = self.con.get_build_info(homework_name, number)
             build_data = BuildData(build_data_dict)
             if not build_data.is_in_progress:
-                self.build_data_cache[number] = build_data
+                homework_cache[number] = build_data
             return build_data
 
     def build_job(self, homework_name, params: dict):
