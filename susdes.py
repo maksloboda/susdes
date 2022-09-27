@@ -12,9 +12,11 @@ import jenkins
 
 APP_NAME = "SusDesign"
 CONF_NAME = "data.conf"
+CACHE_NAME = "cache.bin"
 config_keys = ["jenkins_address", "jenkins_login", "jenkins_password", "student_name", "repository_url"]
 
 TSW: typing.Optional[TestSystemWrapper] = None
+
 
 def try_load_config() -> dict:
     config = load_data_from_config()
@@ -125,16 +127,11 @@ def homework_group():
     global TSW
     data = load_data_from_config()
     try:
-        TSW = TestSystemWrapper(data["jenkins_address"], data["jenkins_login"], data["jenkins_password"])
+        TSW = TestSystemWrapper(data["jenkins_address"], data["jenkins_login"], data["jenkins_password"],
+                                os.path.join(click.get_app_dir(APP_NAME), CACHE_NAME))
     except jenkins.JenkinsException as e:
         print(e, file=sys.stderr)
         sys.exit(1)
-
-
-def get_jenkins_connection(data):
-    con = jenkins.Jenkins(data["jenkins_address"], username=data["jenkins_login"], password=data["jenkins_password"])
-    return con
-
 
 @click.command("list")
 def homework_list():
@@ -185,16 +182,17 @@ def homework_stat(homework, visibility):
     Shows submissions for this homework. By default, only for current student.
     """
     data = try_load_config()
-    con = get_jenkins_connection(data)
-    if all(map(lambda x: x["fullname"] != homework, con.get_jobs())):
+    if all(map(lambda x: x.fullname != homework, TSW.get_homework_list())):
         click.echo("no such homework", sys.stderr)
         sys.exit(1)
-    builds = con.get_job_info(homework)["builds"]
+    # builds = con.get_job_info(homework)["builds"]
     info = filter(
         lambda x: visibility == "all" or is_build_by_current_student(data, x),
         map(
-            lambda x: con.get_build_info(homework, x['number']),
-            builds
+            lambda x: x.raw_data,
+            TSW.get_builds(homework)
+            # lambda x: con.get_build_info(homework, x['number']),
+            # builds
         )
     )
 
@@ -213,14 +211,13 @@ def homework_submit(homework):
     Submits current commit to the build system
     """
     data = try_load_config()
-    con = get_jenkins_connection(data)
-    if all(map(lambda x: x["fullname"] != homework, con.get_jobs())):
+    if all(map(lambda x: x.fullname != homework, TSW.get_homework_list())):
         click.echo("no such homework", sys.stderr)
         sys.exit(1)
     completed = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True)
     current_commit = completed.stdout.strip().decode("utf-8")
     # This is not the display name sadly ;(
-    con.build_job(homework, {
+    TSW.build_job(homework, {
         "STUDENT_NAME": data["student_name"],
         "GITHUB_CLONE_URL": data["repository_url"],
         "GIT_COMMIT_HASH": current_commit,
