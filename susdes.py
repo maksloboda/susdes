@@ -177,7 +177,8 @@ def format_build(build_info):
 @click.command("stat")
 @click.argument("homework")
 @click.option("--all", "visibility", flag_value="all", help="Shows all submissions")
-def homework_stat(homework, visibility):
+@click.option("--nocache", "reset_cache", flag_value=True, help="Reset the local build cache")
+def homework_stat(homework, visibility, reset_cache=False):
     """
     Shows submissions for this homework. By default, only for current student.
     """
@@ -190,7 +191,7 @@ def homework_stat(homework, visibility):
         lambda x: visibility == "all" or is_build_by_current_student(data, x),
         map(
             lambda x: x.raw_data,
-            TSW.get_builds(homework)
+            TSW.get_builds(homework, reset_cache=reset_cache)
             # lambda x: con.get_build_info(homework, x['number']),
             # builds
         )
