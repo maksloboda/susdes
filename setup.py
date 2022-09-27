@@ -5,7 +5,7 @@ version = "VERSIONGOESHERE"
 setup(
     name='susdes',
     version=version,
-    py_modules=['susdes'],
+    py_modules=['susdes', 'test_system_wrapper'],
     url="https://github.com/maksloboda/susdes",
     author="Maks Loboda",
     author_email="mloboda@edu.hse.ru",
